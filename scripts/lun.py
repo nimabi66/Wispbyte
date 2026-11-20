@@ -227,17 +227,31 @@ def login(sb, email: str, password: str) -> bool:
 
 
 # ====================== 主流程 ======================
-def process_login(email: str, password: str, tg_token: str, tg_chat: str):
+def is_ci_environment() -> bool:
+    """检测是否在 CI / GitHub Actions 环境"""
+    return any([
+        os.environ.get("GITHUB_ACTIONS") == "true",
+        os.environ.get("CI") == "true",
+        os.environ.get("RUNNER_OS") is not None,
+    ])
+
+
+def process_login(email: str, password: str, tg_token: str, tg_chat: str, headed: bool = False):
     log("=" * 50)
     log(f"开始登录 Lunes Host | {mask_email(email)}")
     log("=" * 50)
+
+    # CI 环境强制无头，避免 "chrome not reachable"
+    if is_ci_environment():
+        headed = False
+        log("检测到 CI 环境，强制使用无头模式")
 
     user_data_dir = tempfile.mkdtemp(prefix="lunes_usr_")
     with SB(
         uc=True,
         test=True,
         locale="en",
-        headed=True,          # 强制可视模式（已去除无头）
+        headed=headed,
         user_data_dir=user_data_dir,
         chromium_arg="--disable-blink-features=AutomationControlled"
     ) as sb:
@@ -253,7 +267,6 @@ def process_login(email: str, password: str, tg_token: str, tg_chat: str):
                     f"⏰ 时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
                 )
                 send_tg_photo(tg_token, tg_chat, screenshot, caption)
-                # 也发一条纯文本（方便没有图片的情况）
                 send_tg_message(tg_token, tg_chat, caption)
                 return True
             else:
@@ -287,6 +300,9 @@ def main():
     tg_token = os.environ.get("TG_BOT_TOKEN", "").strip()
     tg_chat = os.environ.get("TG_CHAT_ID", "").strip()
 
+    # 默认无头（与 Wispbyte 脚本一致），本地调试可设置 HEADED=true
+    headed = os.environ.get("HEADED", "false").lower() in ("1", "true", "yes")
+
     if not email or not password:
         log("缺少 LUNES_EMAIL 或 LUNES_PASSWORD 环境变量", "ERROR")
         print("\n请设置环境变量后运行，例如：")
@@ -294,22 +310,26 @@ def main():
         print('  export LUNES_PASSWORD="yourpassword"')
         print('  export TG_BOT_TOKEN="your_bot_token"   # 可选')
         print('  export TG_CHAT_ID="your_chat_id"       # 可选')
+        print('  export HEADED=true                     # 可选，本地显示浏览器')
         print("  python lun.py")
         sys.exit(1)
 
     if not tg_token or not tg_chat:
         log("未配置 TG_BOT_TOKEN / TG_CHAT_ID，将跳过 Telegram 通知", "WARN")
 
+    # 实际运行模式（CI 会强制无头）
+    actual_headed = headed and not is_ci_environment()
+
     print("\n" + "=" * 50)
-    print("  Lunes Host Auto Login Tool  v4.1")
+    print("  Lunes Host Auto Login Tool  v4.2")
     print("  SeleniumBase + Undetected Chrome")
     print("=" * 50)
-    print("模式: 可视模式 👁️  (已去除无头)")
+    print(f"模式: {'可视模式 👁️' if actual_headed else '无头模式 🚀'}")
     print(f"通知: {'已启用 📱' if tg_token and tg_chat else '未启用'}")
     print(f"账号: {mask_email(email)}")
     print("=" * 50 + "\n")
 
-    success = process_login(email, password, tg_token, tg_chat)
+    success = process_login(email, password, tg_token, tg_chat, headed=headed)
 
     print("\n" + "=" * 50)
     if success:
