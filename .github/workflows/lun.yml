@@ -38,15 +38,15 @@ jobs:
           python -m pip install --upgrade pip
           pip install seleniumbase pyvirtualdisplay requests
 
-      # 🔐 启动 Cloudflare WARP（关键步骤）
-      - name: 🌐 Enable Cloudflare WARP
-        uses: fscarmen/warp-on-actions@main
-        with:
-          mode: client     # 客户端模式（最常用）
+      # # 🔐 启动 Cloudflare WARP（关键步骤）
+      # - name: 🌐 Enable Cloudflare WARP
+      #   uses: fscarmen/warp-on-actions@main
+      #   with:
+      #     mode: client     # 客户端模式（最常用）
 
-      # （可选）打印当前出口 IP，便于你验证
-      - name: 🔎 Show IP after WARP
-        run: curl https://ip.luckyxz.pp.ua/json || true
+      # # （可选）打印当前出口 IP，便于你验证
+      # - name: 🔎 Show IP after WARP
+      #   run: curl https://ip.luckyxz.pp.ua/json || true
 
       - name: 执行重启脚本
         env:
