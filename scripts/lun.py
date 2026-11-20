@@ -227,7 +227,7 @@ def login(sb, email: str, password: str) -> bool:
 
 
 # ====================== 主流程 ======================
-def process_login(email: str, password: str, tg_token: str, tg_chat: str, headed: bool = False):
+def process_login(email: str, password: str, tg_token: str, tg_chat: str):
     log("=" * 50)
     log(f"开始登录 Lunes Host | {mask_email(email)}")
     log("=" * 50)
@@ -237,7 +237,7 @@ def process_login(email: str, password: str, tg_token: str, tg_chat: str, headed
         uc=True,
         test=True,
         locale="en",
-        headed=headed,
+        headed=True,          # 强制可视模式（已去除无头）
         user_data_dir=user_data_dir,
         chromium_arg="--disable-blink-features=AutomationControlled"
     ) as sb:
@@ -286,7 +286,6 @@ def main():
     password = os.environ.get("LUNES_PASSWORD", "").strip()
     tg_token = os.environ.get("TG_BOT_TOKEN", "").strip()
     tg_chat = os.environ.get("TG_CHAT_ID", "").strip()
-    headed = os.environ.get("HEADED", "false").lower() in ("1", "true", "yes")
 
     if not email or not password:
         log("缺少 LUNES_EMAIL 或 LUNES_PASSWORD 环境变量", "ERROR")
@@ -295,7 +294,6 @@ def main():
         print('  export LUNES_PASSWORD="yourpassword"')
         print('  export TG_BOT_TOKEN="your_bot_token"   # 可选')
         print('  export TG_CHAT_ID="your_chat_id"       # 可选')
-        print('  export HEADED=true                     # 可选，显示浏览器')
         print("  python lun.py")
         sys.exit(1)
 
@@ -303,15 +301,15 @@ def main():
         log("未配置 TG_BOT_TOKEN / TG_CHAT_ID，将跳过 Telegram 通知", "WARN")
 
     print("\n" + "=" * 50)
-    print("  Lunes Host Auto Login Tool  v4.0")
+    print("  Lunes Host Auto Login Tool  v4.1")
     print("  SeleniumBase + Undetected Chrome")
     print("=" * 50)
-    print(f"模式: {'可视模式 👁️' if headed else '无头模式 🚀'}")
+    print("模式: 可视模式 👁️  (已去除无头)")
     print(f"通知: {'已启用 📱' if tg_token and tg_chat else '未启用'}")
     print(f"账号: {mask_email(email)}")
     print("=" * 50 + "\n")
 
-    success = process_login(email, password, tg_token, tg_chat, headed=headed)
+    success = process_login(email, password, tg_token, tg_chat)
 
     print("\n" + "=" * 50)
     if success:
